@@ -1,6 +1,6 @@
 'use strict';
 
-const boundary = require('boundary');
+const { userland, expose } = require('boundary');
 
 const getNumbers = () => {
   const result = Promise
@@ -8,7 +8,7 @@ const getNumbers = () => {
     .then((numbers) => {
       numbers.push(4);
       console.log('internal Array patched:', numbers.patched);
-      return numbers;
+      return userland.Array.from(numbers);
     });
   console.log('internal Promise patched:', result.patched);
   return result;
@@ -20,7 +20,7 @@ const failWithError = () => {
   return Promise.reject(error);
 };
 
-module.exports = boundary.expose({
+module.exports = expose({
   getNumbers,
   failWithError,
 });

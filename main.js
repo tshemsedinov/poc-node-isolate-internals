@@ -43,24 +43,10 @@ const toUserlandError = (value = {}) => {
   return error;
 };
 
-const toUserlandValue = (value) => {
-  if (Array.isArray(value)) {
-    return userland.Array.from(value, (item) => toUserlandValue(item));
-  }
-  if (!value) return value;
-  if (typeof value !== 'object') return value;
-  if (value instanceof Error) return toUserlandError(value);
-  const record = new userland.Object();
-  for (const key of Object.keys(value)) {
-    record[key] = toUserlandValue(value[key]);
-  }
-  return record;
-};
-
 const toUserlandPromise = (internalPromise) => (
   new userland.Promise((resolve, reject) => {
     internalPromise.then(
-      (value) => resolve(toUserlandValue(value)),
+      (value) => resolve(value),
       (error) => reject(toUserlandError(error)),
     );
   })
@@ -75,16 +61,15 @@ const exposeFunction = (fn) => (...args) => {
 };
 
 const boundary = Object.freeze({
+  userland,
   expose(api) {
-    const frozenApi = Object.freeze(api);
-    const wrapped = new userland.Object();
-    for (const key of Object.keys(frozenApi)) {
-      const method = frozenApi[key];
+    for (const key of Object.keys(api)) {
+      const method = api[key];
       if (typeof method === 'function') {
-        wrapped[key] = exposeFunction(method);
+        api[key] = exposeFunction(method);
       }
     }
-    return Object.freeze(wrapped);
+    return Object.freeze(api);
   },
 });
 
