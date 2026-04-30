@@ -33,6 +33,12 @@ const userland = {
   Error: vm.runInContext('Error', userlandContext),
 };
 
+const isThenable = (value) => (
+  value !== null &&
+  (typeof value === 'object' || typeof value === 'function') &&
+  typeof value.then === 'function'
+);
+
 const toUserlandError = (value = {}) => {
   if (value instanceof userland.Error) return value;
   const { message = '', name, code, stack } = value;
@@ -43,21 +49,23 @@ const toUserlandError = (value = {}) => {
   return error;
 };
 
-const toUserlandPromise = (internalPromise) => (
-  new userland.Promise((resolve, reject) => {
-    internalPromise.then(
-      (value) => resolve(value),
-      (error) => reject(toUserlandError(error)),
-    );
-  })
+const toUserlandPromise = (value) => (
+  userland.Promise
+    .resolve(value)
+    .catch((error) => {
+      throw toUserlandError(error);
+    })
 );
 
 const exposeFunction = (fn) => (...args) => {
-  const callPromise = Promise.resolve().then(() => fn(...args));
-  const convertedPromise = callPromise.catch((error) =>
-    Promise.reject(toUserlandError(error)));
-  const userlandPromise = toUserlandPromise(convertedPromise);
-  return userlandPromise;
+  let result;
+  try {
+    result = fn(...args);
+  } catch (error) {
+    return userland.Promise.reject(toUserlandError(error));
+  }
+  if (!isThenable(result)) return result;
+  return toUserlandPromise(result);
 };
 
 const boundary = Object.freeze({

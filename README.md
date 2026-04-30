@@ -26,8 +26,8 @@ This PoC uses a `boundary` namespace that internal modules consume to export
 their API safely:
 
 - internal functions are wrapped with `boundary.expose(...)`
-- returned promises are recreated as userland `Promise`
-- returned arrays/records are copied into userland `Array`/`Object`
+- thenable results are normalized as userland `Promise`
+- values should be constructed in userland form at the boundary edge
 - thrown/rejected errors are re-branded as userland `Error`
 
 This keeps internal code normal and readable while moving complexity to the
