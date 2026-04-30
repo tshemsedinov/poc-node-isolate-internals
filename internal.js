@@ -1,6 +1,6 @@
 'use strict';
 
-const bridge = require('bridge');
+const boundary = require('boundary');
 
 const getNumbers = () => {
   const result = Promise
@@ -14,15 +14,13 @@ const getNumbers = () => {
   return result;
 };
 
-const failWithError = () => (
-  Promise.resolve().then(() => {
-    const error = new Error('internal failure');
-    console.log('internal Error patched:', error.patched);
-    throw error;
-  })
-);
+const failWithError = () => {
+  const error = new Error('internal failure');
+  console.log('internal Error patched:', error.patched);
+  return Promise.reject(error);
+};
 
-module.exports = bridge.exposeApi({
+module.exports = boundary.expose({
   getNumbers,
   failWithError,
 });

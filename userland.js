@@ -21,7 +21,7 @@ Error.prototype.patched = 'userland';
   try {
     await internal.failWithError();
   } catch (error) {
-    console.log('error instanceof Error:', error instanceof Error);
-    console.log('error patched:', error.patched);
+    console.log('userland error instanceof Error:', error instanceof Error);
+    console.log('userland error patched:', error.patched);
   }
 })();

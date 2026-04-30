@@ -74,8 +74,8 @@ const exposeFunction = (fn) => (...args) => {
   return userlandPromise;
 };
 
-const bridge = Object.freeze({
-  exposeApi(api) {
+const boundary = Object.freeze({
+  expose(api) {
     const frozenApi = Object.freeze(api);
     const wrapped = new userland.Object();
     for (const key of Object.keys(frozenApi)) {
@@ -91,7 +91,7 @@ const bridge = Object.freeze({
 const internalApi = evaluateCommonJs({
   context: internalContext,
   filename: path.join(__dirname, 'internal.js'),
-  dependencies: { bridge },
+  dependencies: { boundary },
 });
 
 evaluateCommonJs({
