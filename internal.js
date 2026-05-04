@@ -1,26 +1,21 @@
 'use strict';
 
-const { userland, expose } = require('boundary');
+const { internal } = require('./boundary.js');
+const { Promise, Array, Error } = internal;
 
 const getNumbers = () => {
   const result = Promise
     .resolve([1, 2, 3])
     .then((numbers) => {
       numbers.push(4);
-      console.log('internal Array patched:', numbers.patched);
-      return userland.Array.from(numbers);
+      return Array.from(numbers);
     });
-  console.log('internal Promise patched:', result.patched);
   return result;
 };
 
 const failWithError = () => {
   const error = new Error('internal failure');
-  console.log('internal Error patched:', error.patched);
   return Promise.reject(error);
 };
 
-module.exports = expose({
-  getNumbers,
-  failWithError,
-});
+module.exports = { getNumbers, failWithError };
