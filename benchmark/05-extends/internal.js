@@ -1,6 +1,6 @@
 'use strict';
 
-const { Array, Promise } = require('./boundary.js').internal;
+const { Array, Promise } = require('./boundary.js').userland;
 
 const getNumbers = () => (
   Promise
