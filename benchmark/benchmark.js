@@ -34,6 +34,11 @@ const SOLUTIONS = [
     instanceof: 'yes',
     description: 'extends internal built-ins and injects to userland',
   },
+  {
+    name: '06-forward',
+    instanceof: 'yes',
+    description: 'forward wrappers for Promise and Array without subclassing',
+  },
 ];
 
 const getOptionsFromArgv = (offset = 2) => ({
