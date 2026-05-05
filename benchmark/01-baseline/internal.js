@@ -1,12 +1,8 @@
 'use strict';
 
-const getNumbers = () => (
-  Promise
-    .resolve([1, 2, 3])
-    .then((numbers) => {
-      numbers.push(4);
-      return { numbers };
-    })
-);
+const sumNumbers = (array) => {
+  const total = array.reduce((sum, number) => sum + number, 0);
+  return Promise.resolve({ total });
+};
 
-module.exports = { getNumbers };
+module.exports = { sumNumbers };

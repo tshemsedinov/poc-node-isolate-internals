@@ -1,33 +1,13 @@
 'use strict';
 
-const boundary = require('boundary');
-const {
-  Promise: InternalPromise,
-  Array: InternalArray,
-  Object: InternalObject,
-  Error: InternalError,
-} = boundary.internal;
+const { userland, internal } = require('boundary');
 
-const createExportedResult = (numbers) => {
-  const result = new InternalObject();
-  result.numbers = InternalArray.from(numbers);
-  return result;
+const sumNumbers = (array) => {
+  const map = (sum, number) => sum + number;
+  const total = internal.Array.prototype.reduce.call(array, map, 0);
+  const result = new userland.Object();
+  result.total = total;
+  return userland.Promise.resolve(result);
 };
 
-const getNumbers = () => (
-  new InternalPromise((resolve, reject) => {
-    Promise
-      .resolve([1, 2, 3])
-      .then((numbers) => {
-        numbers.push(4);
-        resolve(createExportedResult(numbers));
-      })
-      .catch((error) => {
-        const exportedError = new InternalError(error.message);
-        exportedError.name = error.name;
-        reject(exportedError);
-      });
-  })
-);
-
-module.exports = { getNumbers };
+module.exports = { sumNumbers };

@@ -1,14 +1,11 @@
 'use strict';
 
-const { Array, Promise } = require('./boundary.js').internal;
+const { Promise, Array } = require('./boundary.js').internal;
 
-const getNumbers = () => (
-  Promise
-    .resolve([1, 2, 3])
-    .then((numbers) => {
-      numbers.push(4);
-      return { numbers };
-    })
-);
+const sumNumbers = (array) => {
+  const map = (sum, number) => sum + number;
+  const total = Array.from(array).reduce(map, 0);
+  return Promise.resolve({ total });
+};
 
-module.exports = { getNumbers };
+module.exports = { sumNumbers };

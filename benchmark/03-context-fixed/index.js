@@ -26,13 +26,11 @@ const evaluateCommonJs = ({ context, filename, dependencies = {} }) => {
 const internalContext = vm.createContext({ console });
 const userlandContext = vm.createContext({ console });
 
+const src = '({ Promise, Array, Object })';
+
 const boundary = {
-  internal: {
-    Promise: vm.runInContext('Promise', userlandContext),
-    Array: vm.runInContext('Array', userlandContext),
-    Object: vm.runInContext('Object', userlandContext),
-    Error: vm.runInContext('Error', userlandContext),
-  },
+  internal: vm.runInContext(src, internalContext),
+  userland: vm.runInContext(src, userlandContext),
 };
 
 const internal = evaluateCommonJs({

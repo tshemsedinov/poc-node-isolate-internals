@@ -36,27 +36,17 @@ Configuration:
 
 | Solution | Setup ms | Median ms | Slowdown | instanceof |
 | --- | ---: | ---: | ---: | :---: |
-| 01-baseline | 0.000 | 0.105 | 1.000x | yes |
-| 02-context | 0.000 | 0.243 | 2.327x | no |
-| 03-context-fixed | 0.001 | 0.533 | 5.096x | yes |
-| 04-primordials | 0.000 | 0.152 | 1.454x | yes |
-| 05-extends | 0.001 | 0.104 | 0.992x | yes |
-
-Interpretation:
-
-- **01-baseline** is the unsafe reference point.
-- **02-context** pays for cross-context operations and loses direct `instanceof` compatibility.
-- **03-context-fixed** restores `instanceof` behavior via adapters, with higher runtime overhead.
-- **04-primordials** keeps `instanceof` and reduces overhead compared to context-adapter mode.
-- **05-extends** currently gives the best median time while keeping `instanceof` compatibility.
+| 01-baseline | 0.000 | 0.032 | 1.000x | yes |
+| 02-context | 0.000 | 0.258 | 8.010x | no |
+| 03-context-fixed | 0.000 | 0.293 | 9.095x | yes |
+| 04-primordials | 0.000 | 0.085 | 2.652x | yes |
+| 05-extends | 0.000 | 0.038 | 1.187x | yes |
 
 ## What this PoC demonstrates
 
-- userland patches `Promise.prototype`, `Array.prototype`, and `Error.prototype`
-- internal code uses normal JS (`Promise`, `Array`, `Error`) without primordials
 - userland pollution does not affect internal built-ins
-- values returned to userland keep expected branding (`instanceof` works)
-- internal errors crossing the boundary become userland `Error` objects
+- `instanceof` works for values returned to userland
+- **05-extends** is close to baseline performance while keeping `instanceof` compatibility
 
 ## Trade-offs and limitations
 
