@@ -12,32 +12,44 @@ const SOLUTIONS = [
   {
     name: '01-baseline',
     instanceof: 'yes',
+    patchable: 'yes',
     description: 'is the unsafe reference',
   },
   {
     name: '02-context',
     instanceof: 'no',
+    patchable: 'no',
     description: 'vm.createContext to isolate userland and internal',
   },
   {
     name: '03-context-fixed',
     instanceof: 'yes',
+    patchable: 'yes',
     description: 'vm.createContext + boundary adapter to cross realms',
   },
   {
     name: '04-primordials',
     instanceof: 'yes',
+    patchable: 'yes',
     description: 'protect native prototypes with saved primordials',
   },
   {
     name: '05-extends',
     instanceof: 'yes',
+    patchable: 'no',
     description: 'extends internal built-ins and injects to userland',
   },
   {
     name: '06-forward',
     instanceof: 'yes',
+    patchable: 'no',
     description: 'forward wrappers for Promise and Array without subclassing',
+  },
+  {
+    name: '07-prototype',
+    instanceof: 'yes',
+    patchable: 'no',
+    description: 'prototype inheritance with Symbol.species and Symbol.hasInstance, no value conversion',
   },
 ];
 
@@ -75,6 +87,7 @@ const runBenchmarkFor = async (solutionName, solution, options = {}) => {
 
   const sorted = sampleTimesMs.toSorted((left, right) => left - right);
   const middle = Math.floor(sorted.length / 2);
+  const p95index = Math.floor(sorted.length * 0.95);
 
   return {
     name: solutionName,
@@ -84,6 +97,7 @@ const runBenchmarkFor = async (solutionName, solution, options = {}) => {
     setupMs: toMilliseconds(setupStart, setupEnd),
     sampleTimesMs,
     medianMs: sorted[middle],
+    p95Ms: sorted[p95index],
     minMs: sorted[0],
     maxMs: sorted[sorted.length - 1],
     checksum,
@@ -161,18 +175,20 @@ const createRow = (solution, benchmark, baselineMedianMs) => {
     name: solution.name,
     setupMs: formatMetric(benchmark.setupMs),
     medianMs: formatMetric(benchmark.medianMs),
+    p95Ms: formatMetric(benchmark.p95Ms),
     minMs: formatMetric(benchmark.minMs),
     maxMs: formatMetric(benchmark.maxMs),
     vsBaseline: formatMetric(vsBaseline),
     instanceof: solution.instanceof ?? 'n/a',
+    patchable: solution.patchable ?? 'n/a',
   };
 };
 
 const toMarkdownTable = (rows) => {
   const formatMs = (value) => value.toFixed(3);
   const header = [
-    '| Solution | Setup ms | Median ms | Slowdown | instanceof |',
-    '| --- | ---: | ---: | ---: | :---: |',
+    '| Solution | Setup ms | Median ms | p95 ms | Slowdown | instanceof | patchable |',
+    '| --- | ---: | ---: | ---: | ---: | :---: | :---: |',
   ];
 
   const body = rows.map((row) => {
@@ -181,8 +197,10 @@ const toMarkdownTable = (rows) => {
       row.name,
       formatMs(row.setupMs),
       formatMs(row.medianMs),
+      formatMs(row.p95Ms),
       slowdown,
       row.instanceof,
+      row.patchable,
     ];
     return `| ${cells.join(' | ')} |`;
   });
