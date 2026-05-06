@@ -49,7 +49,13 @@ const SOLUTIONS = [
     name: '07-prototype',
     instanceof: 'yes',
     patchable: 'no',
-    description: 'prototype inheritance with Symbol.species and Symbol.hasInstance, no value conversion',
+    description: 'prototype inheritance with Symbol.species/hasInstance, no value conversion',
+  },
+  {
+    name: '08-module',
+    instanceof: 'yes',
+    patchable: 'yes',
+    description: 'per-module injection of internal/userland classes via Module._compile hook',
   },
 ];
 
