@@ -1,161 +1,135 @@
 'use strict';
 
-const Module = require('node:module');
-const path = require('node:path');
-const vm = require('node:vm');
+const NativeObject = globalThis.Object;
+const NativeArray = globalThis.Array;
+const NativePromise = globalThis.Promise;
+const NativeError = globalThis.Error;
+const NativeSymbol = globalThis.Symbol;
+const reflectConstruct = globalThis.Reflect.construct;
 
-const InternalObject = globalThis.Object;
-const InternalArray = globalThis.Array;
-const InternalPromise = globalThis.Promise;
-const InternalError = globalThis.Error;
-const InternalTypeError = globalThis.TypeError;
-const InternalRangeError = globalThis.RangeError;
-const InternalSyntaxError = globalThis.SyntaxError;
-const InternalSymbol = globalThis.Symbol;
-const InternalMap = globalThis.Map;
-const InternalSet = globalThis.Set;
+const objectCreate = NativeObject.create;
+const defineProperty = NativeObject.defineProperty;
+const getOwnPropertyNames = NativeObject.getOwnPropertyNames;
+const getOwnPropertySymbols = NativeObject.getOwnPropertySymbols;
+const getOwnPropertyDescriptor = NativeObject.getOwnPropertyDescriptor;
 
-const ObjectCreate = InternalObject.create;
-const ObjectDefineProperty = InternalObject.defineProperty;
-const ObjectKeys = InternalObject.keys;
-const ObjectGetOwnPropertyNames = InternalObject.getOwnPropertyNames;
-const ObjectGetOwnPropertyDescriptor = InternalObject.getOwnPropertyDescriptor;
+const nativeArrayFrom = NativeArray.from;
+const nativeArrayOf = NativeArray.of;
+const nativeArrayIsArray = NativeArray.isArray;
 
-const defineValue = (target, key, value) => {
-  ObjectDefineProperty(target, key, {
-    value,
-    configurable: true,
-    writable: true,
-    enumerable: false,
-  });
-};
+const nativePromiseResolve = NativePromise.resolve.bind(NativePromise);
+const nativePromiseReject = NativePromise.reject.bind(NativePromise);
+const nativePromiseAll = NativePromise.all.bind(NativePromise);
+const nativePromiseRace = NativePromise.race.bind(NativePromise);
+const nativePromiseAllSettled = NativePromise.allSettled.bind(NativePromise);
+const nativePromiseAny = NativePromise.any.bind(NativePromise);
 
-const defineGetter = (target, key, get) => {
-  ObjectDefineProperty(target, key, {
-    get,
-    configurable: true,
-    enumerable: false,
-  });
-};
+const symbolHasInstance = NativeSymbol.hasInstance;
+const symbolSpecies = NativeSymbol.species;
 
-const buildUserland = (Internal, name) => {
-  const Userland = function(...args) {
-    if (new.target) return Reflect.construct(Internal, args, Userland);
-    return Internal(...args);
-  };
-
-  Userland.prototype = ObjectCreate(Internal.prototype, {
-    constructor: { value: Userland, configurable: true, writable: true },
-  });
-
-  for (const key of ObjectGetOwnPropertyNames(Internal)) {
-    if (key === 'length' || key === 'name' || key === 'prototype') continue;
-    const desc = ObjectGetOwnPropertyDescriptor(Internal, key);
-    if (!desc) continue;
-    try {
-      ObjectDefineProperty(Userland, key, desc);
-    } catch {}
+const copyOwnMethods = (target, source) => {
+  const names = getOwnPropertyNames(source);
+  for (let i = 0; i < names.length; i++) {
+    const key = names[i];
+    if (
+      key === 'constructor' || key === 'length' ||
+      key === 'name' || key === 'prototype'
+    ) continue;
+    const descriptor = getOwnPropertyDescriptor(source, key);
+    if (!descriptor.writable) continue;
+    target[key] = source[key];
   }
-  defineValue(Userland, InternalSymbol.hasInstance, (instance) => (
-    instance instanceof Internal
-  ));
-  defineGetter(Userland, InternalSymbol.species, () => Userland);
-  defineValue(Userland, 'name', name);
-
-  return Userland;
-};
-
-const UserlandArray = buildUserland(InternalArray, 'Array');
-const UserlandPromise = buildUserland(InternalPromise, 'Promise');
-const UserlandError = buildUserland(InternalError, 'Error');
-const UserlandTypeError = buildUserland(InternalTypeError, 'TypeError');
-const UserlandRangeError = buildUserland(InternalRangeError, 'RangeError');
-const UserlandSyntaxError = buildUserland(InternalSyntaxError, 'SyntaxError');
-const UserlandMap = buildUserland(InternalMap, 'Map');
-const UserlandSet = buildUserland(InternalSet, 'Set');
-
-const internalBindings = {
-  Object: InternalObject,
-  Array: InternalArray,
-  Promise: InternalPromise,
-  Error: InternalError,
-  TypeError: InternalTypeError,
-  RangeError: InternalRangeError,
-  SyntaxError: InternalSyntaxError,
-  Symbol: InternalSymbol,
-  Map: InternalMap,
-  Set: InternalSet,
-};
-
-const userlandBindings = {
-  Object: InternalObject,
-  Array: UserlandArray,
-  Promise: UserlandPromise,
-  Error: UserlandError,
-  TypeError: UserlandTypeError,
-  RangeError: UserlandRangeError,
-  SyntaxError: UserlandSyntaxError,
-  Symbol: InternalSymbol,
-  Map: UserlandMap,
-  Set: UserlandSet,
-};
-
-const internalParamNames = ObjectKeys(internalBindings);
-const internalParamValues = internalParamNames.map((k) => internalBindings[k]);
-
-const userlandParamNames = ObjectKeys(userlandBindings);
-const userlandParamValues = userlandParamNames.map((k) => userlandBindings[k]);
-
-const wrapHead = (paramNames) => ([
-  'exports', 'require', 'module', '__filename', '__dirname',
-  ...paramNames,
-]);
-
-const internalWrapperParams = wrapHead(internalParamNames);
-const userlandWrapperParams = wrapHead(userlandParamNames);
-
-const originalCompile = Module.prototype._compile;
-
-Module.prototype._compile = function(content, filename) {
-  if (filename.includes('node_modules')) {
-    return originalCompile.call(this, content, filename);
+  const symbols = getOwnPropertySymbols(source);
+  for (let i = 0; i < symbols.length; i++) {
+    const sym = symbols[i];
+    if (sym === symbolHasInstance || sym === symbolSpecies) continue;
+    const descriptor = getOwnPropertyDescriptor(source, sym);
+    if (!descriptor.writable) continue;
+    target[sym] = source[sym];
   }
-  const isInternal = filename.includes('internal');
-  const wrapperParams = isInternal
-    ? internalWrapperParams
-    : userlandWrapperParams;
-  const paramValues = isInternal
-    ? internalParamValues
-    : userlandParamValues;
-  const compiledFn = vm.compileFunction(content, wrapperParams, {
-    filename,
-    lineOffset: 0,
-    columnOffset: 0,
-  });
-
-  const requireFn = Module.createRequire(filename);
-  const dirname = path.dirname(filename);
-
-  return compiledFn.apply(this.exports, [
-    this.exports,
-    requireFn,
-    this,
-    filename,
-    dirname,
-    ...paramValues,
-  ]);
 };
 
-globalThis.Array = UserlandArray;
-globalThis.Promise = UserlandPromise;
-globalThis.Error = UserlandError;
-globalThis.TypeError = UserlandTypeError;
-globalThis.RangeError = UserlandRangeError;
-globalThis.SyntaxError = UserlandSyntaxError;
-globalThis.Map = UserlandMap;
-globalThis.Set = UserlandSet;
+function Object() {
+  if (!new.target) return NativeObject.apply(null, arguments);
+  return reflectConstruct(NativeObject, arguments, new.target);
+}
+
+Object.prototype = objectCreate(NativeObject.prototype);
+Object.prototype.constructor = Object;
+copyOwnMethods(Object.prototype, NativeObject.prototype);
+copyOwnMethods(Object, NativeObject);
+defineProperty(Object, symbolHasInstance, {
+  value: (value) => {
+    if (value === null) return false;
+    const type = typeof value;
+    return type === 'object' || type === 'function';
+  },
+  configurable: true,
+  writable: true,
+});
+
+function Array() {
+  if (!new.target) return NativeArray.apply(null, arguments);
+  return reflectConstruct(NativeArray, arguments, new.target);
+}
+
+Array.prototype = objectCreate(NativeArray.prototype);
+Array.prototype.constructor = Array;
+copyOwnMethods(Array.prototype, NativeArray.prototype);
+
+Array.from = (...args) => nativeArrayFrom.apply(Array, args);
+Array.of = (...args) => nativeArrayOf.apply(Array, args);
+Array.isArray = nativeArrayIsArray;
+defineProperty(Array, symbolHasInstance, {
+  value: (value) => value instanceof NativeArray,
+  configurable: true,
+  writable: true,
+});
+
+function Promise(executor) {
+  if (!new.target) return new Promise(executor);
+  return reflectConstruct(NativePromise, [executor], new.target);
+}
+
+Promise.prototype = objectCreate(NativePromise.prototype);
+Promise.prototype.constructor = Promise;
+copyOwnMethods(Promise.prototype, NativePromise.prototype);
+
+Promise.resolve = nativePromiseResolve;
+Promise.reject = nativePromiseReject;
+Promise.all = nativePromiseAll;
+Promise.race = nativePromiseRace;
+Promise.allSettled = nativePromiseAllSettled;
+Promise.any = nativePromiseAny;
+defineProperty(Promise, symbolHasInstance, {
+  value: (value) => value instanceof NativePromise,
+  configurable: true,
+  writable: true,
+});
+
+function Error() {
+  if (!new.target) return NativeError.apply(null, arguments);
+  return reflectConstruct(NativeError, arguments, new.target);
+}
+
+Error.prototype = objectCreate(NativeError.prototype);
+Error.prototype.constructor = Error;
+copyOwnMethods(Error.prototype, NativeError.prototype);
+
+Error.captureStackTrace = NativeError.captureStackTrace;
+Error.stackTraceLimit = NativeError.stackTraceLimit;
+defineProperty(Error, symbolHasInstance, {
+  value: (value) => value instanceof NativeError,
+  configurable: true,
+  writable: true,
+});
 
 module.exports = {
-  internal: internalBindings,
-  userland: userlandBindings,
+  internal: { Object, Array, Promise, Error },
+  userland: {
+    Object: NativeObject,
+    Array: NativeArray,
+    Promise: NativePromise,
+    Error: NativeError,
+  },
 };
