@@ -57,6 +57,12 @@ const SOLUTIONS = [
     patchable: 'yes',
     description: 'per-module injection of internal/userland classes via Module._compile hook',
   },
+  {
+    name: '09-proto',
+    instanceof: 'yes',
+    patchable: 'yes',
+    description: 'dual prototype hierarchy: internal is a copy, globalThis is the original',
+  },
 ];
 
 const getOptionsFromArgv = (offset = 2) => ({
@@ -261,10 +267,7 @@ const main = async () => {
     benchmarks,
     rows,
   };
-  const interpretation = SOLUTIONS.map(
-    (solution) => `- ${solution.name}: ${solution.description}`,
-  );
-
+  
   const summary = [
     '# Benchmark summary',
     '',
@@ -273,10 +276,6 @@ const main = async () => {
     `Warmup: ${warmup}`,
     '',
     toMarkdownTable(rows),
-    '',
-    'Interpretation:',
-    '',
-    ...interpretation,
   ].join('\n') + '\n';
 
   const resultsPath = path.join(__dirname, 'results.json');
@@ -285,7 +284,16 @@ const main = async () => {
 
   const summaryPath = path.join(__dirname, 'summary.md');
   fs.writeFileSync(summaryPath, summary);
-  process.stdout.write(summary);
+
+  const tableData = Object.fromEntries(rows.map((row) => [row.name, {
+    'setup ms': row.setupMs,
+    'median ms': row.medianMs,
+    'p95 ms': row.p95Ms,
+    'slowdown': `${row.vsBaseline.toFixed(3)}x`,
+    'instanceof': row.instanceof,
+    'patchable': row.patchable,
+  }]));
+  console.table(tableData);
 };
 
 main().catch((error) => {
