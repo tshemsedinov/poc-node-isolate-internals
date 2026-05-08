@@ -1,224 +1,222 @@
 'use strict';
 
-const InternalObject = globalThis.Object;
-const InternalArray = globalThis.Array;
-const InternalPromise = globalThis.Promise;
-const InternalSymbol = globalThis.Symbol;
+const NativeObject = globalThis.Object;
+const NativeArray = globalThis.Array;
+const NativePromise = globalThis.Promise;
+const NativeSymbol = globalThis.Symbol;
 
-const defineValue = (target, key, value) => {
-  InternalObject.defineProperty(target, key, {
-    value,
-    configurable: true,
-    writable: true,
-    enumerable: false,
-  });
-};
+const NativePromisePrototype = NativePromise.prototype;
+const nativePromiseResolve = NativePromise.resolve.bind(NativePromise);
+const nativePromiseReject = NativePromise.reject.bind(NativePromise);
+const nativePromiseAll = NativePromise.all.bind(NativePromise);
+const nativePromiseRace = NativePromise.race.bind(NativePromise);
+const nativePromiseAllSettled = NativePromise.allSettled.bind(NativePromise);
+const nativePromiseAny = NativePromise.any.bind(NativePromise);
 
-const defineGetter = (target, key, get) => {
-  InternalObject.defineProperty(target, key, {
-    get,
-    configurable: true,
-    enumerable: false,
-  });
-};
+const defineProperty = NativeObject.defineProperty;
+const objectCreate = NativeObject.create;
+const getPrototypeOf = NativeObject.getPrototypeOf;
+const objectKeys = NativeObject.keys;
 
 const exportArray = (value) => {
-  if (!(value instanceof InternalArray)) return value;
-  if (InternalObject.getPrototypeOf(value) === UserlandArray.prototype) {
+  if (!(value instanceof NativeArray)) return value;
+  if (getPrototypeOf(value) === Array.prototype) {
     return value;
   }
-
-  InternalObject.setPrototypeOf(value, UserlandArray.prototype);
+  setPrototypeOf(value, Array.prototype);
   return value;
 };
 
 const exportPromise = (value) => {
-  if (!(value instanceof InternalPromise)) return value;
-  if (InternalObject.getPrototypeOf(value) === UserlandPromise.prototype) {
+  if (!(value instanceof NativePromise)) return value;
+  if (getPrototypeOf(value) === Promise.prototype) {
     return value;
   }
-
-  InternalObject.setPrototypeOf(value, UserlandPromise.prototype);
+  setPrototypeOf(value, Promise.prototype);
   return value;
 };
 
 const exportObject = (value) => {
   if (!value || typeof value !== 'object') return value;
-  if (value instanceof InternalArray) return exportArray(value);
-  if (value instanceof InternalPromise) return exportPromise(value);
+  if (value instanceof NativeArray) return exportArray(value);
+  if (value instanceof NativePromise) return exportPromise(value);
 
-  for (const key of InternalObject.keys(value)) {
+  for (const key of objectKeys(value)) {
     value[key] = exportValue(value[key]);
   }
-
   return value;
 };
 
 const exportValue = (value) => {
-  if (value instanceof InternalArray) return exportArray(value);
-  if (value instanceof InternalPromise) return exportPromise(value);
+  if (value instanceof NativeArray) return exportArray(value);
+  if (value instanceof NativePromise) return exportPromise(value);
   if (value && typeof value === 'object') return exportObject(value);
   return value;
 };
 
-const UserlandPromise = function(executor) {
-  return exportPromise(new InternalPromise(executor));
+function Promise(executor) {
+  return exportPromise(new NativePromise(executor));
 };
 
-UserlandPromise.prototype = InternalObject.create(
-  InternalPromise.prototype,
+Promise.prototype = objectCreate(
+  NativePromisePrototype,
   {
     constructor: {
-      value: UserlandPromise,
+      value: Promise,
       configurable: true,
       writable: true,
     },
   },
 );
 
-defineValue(
-  UserlandPromise.prototype,
-  'then',
-  function(onFulfilled, onRejected) {
-    const result = InternalPromise.prototype.then.call(
+defineProperty(Promise.prototype, 'then', {
+  value: function(onFulfilled, onRejected) {
+    const result = NativePromisePrototype.then.call(
       this,
       onFulfilled,
       onRejected,
     );
-
     return exportPromise(result);
   },
-);
+  configurable: true,
+  writable: true,
+  enumerable: false,
+});
 
-defineValue(
-  UserlandPromise.prototype,
-  'catch',
-  function(onRejected) {
-    const result = InternalPromise.prototype.catch.call(this, onRejected);
+defineProperty(Promise.prototype, 'catch', {
+  value: function(onRejected) {
+    const result = NativePromisePrototype.catch.call(this, onRejected);
     return exportPromise(result);
   },
-);
+  configurable: true,
+  writable: true,
+  enumerable: false,
+});
 
-defineValue(
-  UserlandPromise.prototype,
-  'finally',
-  function(onFinally) {
-    const result = InternalPromise.prototype.finally.call(this, onFinally);
+defineProperty(Promise.prototype, 'finally', {
+  value: function(onFinally) {
+    const result = NativePromisePrototype.finally.call(this, onFinally);
     return exportPromise(result);
   },
-);
+  configurable: true,
+  writable: true,
+  enumerable: false,
+});
 
-defineValue(
-  UserlandPromise,
-  'resolve',
-  (value) => exportPromise(InternalPromise.resolve(value)),
-);
+defineProperty(Promise, 'resolve', {
+  value: (value) => exportPromise(nativePromiseResolve(value)),
+  configurable: true,
+  writable: true,
+  enumerable: false,
+});
 
-defineValue(
-  UserlandPromise,
-  'reject',
-  (reason) => exportPromise(InternalPromise.reject(reason)),
-);
+defineProperty(Promise, 'reject', {
+  value: (reason) => exportPromise(nativePromiseReject(reason)),
+  configurable: true,
+  writable: true,
+  enumerable: false,
+});
 
-defineValue(
-  UserlandPromise,
-  'all',
-  (values) => exportPromise(InternalPromise.all(values)),
-);
+defineProperty(Promise, 'all', {
+  value: (values) => exportPromise(nativePromiseAll(values)),
+  configurable: true,
+  writable: true,
+  enumerable: false,
+});
 
-defineValue(
-  UserlandPromise,
-  'race',
-  (values) => exportPromise(InternalPromise.race(values)),
-);
+defineProperty(Promise, 'race', {
+  value: (values) => exportPromise(nativePromiseRace(values)),
+  configurable: true,
+  writable: true,
+  enumerable: false,
+});
 
-defineValue(
-  UserlandPromise,
-  'allSettled',
-  (values) => exportPromise(InternalPromise.allSettled(values)),
-);
+defineProperty(Promise, 'allSettled', {
+  value: (values) => exportPromise(nativePromiseAllSettled(values)),
+  configurable: true,
+  writable: true,
+  enumerable: false,
+});
 
-defineValue(
-  UserlandPromise,
-  'any',
-  (values) => exportPromise(InternalPromise.any(values)),
-);
+defineProperty(Promise, 'any', {
+  value: (values) => exportPromise(nativePromiseAny(values)),
+  configurable: true,
+  writable: true,
+  enumerable: false,
+});
 
-defineGetter(
-  UserlandPromise,
-  InternalSymbol.species,
-  () => UserlandPromise,
-);
+defineProperty(Promise, NativeSymbol.species, {
+  get: () => Promise,
+  configurable: true,
+  enumerable: false,
+});
 
-defineValue(
-  UserlandPromise,
-  InternalSymbol.hasInstance,
-  (instance) => instance instanceof InternalPromise,
-);
+defineProperty(Promise, NativeSymbol.hasInstance, {
+  value: (instance) => instance instanceof NativePromise,
+  configurable: true,
+  writable: true,
+  enumerable: false,
+});
 
-const UserlandArray = function(...args) {
+function Array(...args) {
   if (args.length === 1 && typeof args[0] === 'number') {
-    return exportArray(new InternalArray(args[0]));
+    return exportArray(new NativeArray(args[0]));
   }
+  return exportArray(new NativeArray(...args));
+}
 
-  return exportArray(new InternalArray(...args));
-};
-
-UserlandArray.prototype = InternalObject.create(
-  InternalArray.prototype,
+Array.prototype = objectCreate(
+  NativeArray.prototype,
   {
     constructor: {
-      value: UserlandArray,
+      value: Array,
       configurable: true,
       writable: true,
     },
   },
 );
 
-defineValue(
-  UserlandArray,
-  'from',
-  (...args) => exportArray(InternalArray.from(...args)),
-);
+defineProperty(Array, 'from', {
+  value: (...args) => exportArray(nativeArrayFrom(...args)),
+  configurable: true,
+  writable: true,
+  enumerable: false,
+});
 
-defineValue(
-  UserlandArray,
-  'of',
-  (...args) => exportArray(InternalArray.of(...args)),
-);
+defineProperty(Array, 'of', {
+  value: (...args) => exportArray(nativeArrayOf(...args)),
+  configurable: true,
+  writable: true,
+  enumerable: false,
+});
 
-defineValue(
-  UserlandArray,
-  'isArray',
-  (value) => value instanceof InternalArray,
-);
+defineProperty(Array, 'isArray', {
+  value: (value) => value instanceof NativeArray,
+  configurable: true,
+  writable: true,
+  enumerable: false,
+});
 
-defineGetter(
-  UserlandArray,
-  InternalSymbol.species,
-  () => UserlandArray,
-);
+defineProperty(Array, NativeSymbol.species, {
+  get: () => Array,
+  configurable: true,
+  enumerable: false,
+});
 
-defineValue(
-  UserlandArray,
-  InternalSymbol.hasInstance,
-  (instance) => instance instanceof InternalArray,
-);
-
-globalThis.Promise = UserlandPromise;
-globalThis.Array = UserlandArray;
+defineProperty(Array, NativeSymbol.hasInstance, {
+  value: (instance) => instance instanceof NativeArray,
+  configurable: true,
+  writable: true,
+  enumerable: false,
+});
 
 module.exports = {
   internal: {
-    Promise: InternalPromise,
-    Array: InternalArray,
+    Array: NativeArray,
+    Promise: NativePromise,
   },
   userland: {
-    Promise: UserlandPromise,
-    Array: UserlandArray,
+    Array,
+    Promise,
   },
-  exportArray,
-  exportPromise,
-  exportObject,
-  exportValue,
 };
