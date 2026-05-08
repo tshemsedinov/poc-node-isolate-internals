@@ -1,38 +1,35 @@
 'use strict';
 
-const InternalPromise = globalThis.Promise;
-const InternalArray = globalThis.Array;
+const NativeArray = globalThis.Array;
+const NativePromise = globalThis.Promise;
 
-class Promise extends InternalPromise {
+class Promise extends NativePromise {
   static get [Symbol.species]() {
-    return InternalPromise;
+    return NativePromise;
   }
 
   static [Symbol.hasInstance](value) {
-    return value instanceof InternalPromise;
+    return value instanceof NativePromise;
   }
 }
 
-class Array extends InternalArray {
+class Array extends NativeArray {
   static get [Symbol.species]() {
-    return InternalArray;
+    return NativeArray;
   }
 
   static [Symbol.hasInstance](value) {
-    return value instanceof InternalArray;
+    return value instanceof NativeArray;
   }
 }
-
-globalThis.Promise = Promise;
-globalThis.Array = Array;
 
 module.exports = {
   internal: {
-    Promise: InternalPromise,
-    Array: InternalArray,
+    Array,
+    Promise,
   },
   userland: {
-    Promise,
-    Array,
+    Array: NativeArray,
+    Promise: NativePromise,
   },
 };

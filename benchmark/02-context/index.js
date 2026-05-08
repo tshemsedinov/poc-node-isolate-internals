@@ -8,7 +8,9 @@ const evaluateCommonJs = ({ context, filename, dependencies = {} }) => {
   const source = fs.readFileSync(filename, 'utf8');
   const signature = '((require, module, __filename, __dirname) => {';
   const code = `${signature}\n${source}\n})`;
-  const wrapper = vm.runInContext(code, context, { filename });
+  const wrapper = context
+    ? vm.runInContext(code, context, { filename })
+    : vm.runInThisContext(code, { filename });
   const module = { exports: {} };
 
   const localRequire = (specifier) => {
@@ -23,11 +25,9 @@ const evaluateCommonJs = ({ context, filename, dependencies = {} }) => {
   return module.exports;
 };
 
-const internalContext = vm.createContext({ console });
 const userlandContext = vm.createContext({ console });
 
 const internal = evaluateCommonJs({
-  context: internalContext,
   filename: path.join(__dirname, 'internal.js'),
 });
 

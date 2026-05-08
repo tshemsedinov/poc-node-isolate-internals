@@ -1,70 +1,51 @@
 'use strict';
 
-const InternalPromise = globalThis.Promise;
-const InternalArray = globalThis.Array;
+const NativePromise = globalThis.Promise;
+const NativeArray = globalThis.Array;
 
-const defineValue = (target, key, value) => {
-  Object.defineProperty(target, key, {
-    value,
-    configurable: true,
-    writable: true,
-    enumerable: false,
-  });
-};
+const PromisePrototype = Object.create(NativePromise.prototype);
+const ArrayPrototype = Object.create(NativeArray.prototype);
 
-const PromisePrototype = Object.create(InternalPromise.prototype);
-const ArrayPrototype = Object.create(InternalArray.prototype);
-
-const Promise = function(executor) {
+function Promise(executor) {
   if (!new.target) {
     throw new TypeError(
       `Class constructor Promise cannot be invoked without 'new'`
     );
   }
-  return new InternalPromise(executor);
+  return new NativePromise(executor);
 };
 
-const Array = function(...args) {
-  if (!new.target) {
-    return InternalArray(...args);
-  }
-
-  return new InternalArray(...args);
+function Array(...args) {
+  if (!new.target) return NativeArray(...args);
+  return new NativeArray(...args);
 };
 
-defineValue(Promise, 'resolve', (value) => InternalPromise.resolve(value));
-defineValue(Promise, 'reject', (value) => InternalPromise.reject(value));
-defineValue(Promise, 'all', (value) => InternalPromise.all(value));
-defineValue(Promise, 'race', (value) => InternalPromise.race(value));
-defineValue(Promise, 'allSettled', (value) => InternalPromise.allSettled(value));
-defineValue(Promise, 'any', (value) => InternalPromise.any(value));
-defineValue(Promise, Symbol.hasInstance, (value) => (
-  value instanceof InternalPromise
-));
+Object.defineProperty(Promise, 'resolve', { value: (value) => NativePromise.resolve(value), configurable: true, writable: true, enumerable: false });
+Object.defineProperty(Promise, 'reject', { value: (value) => NativePromise.reject(value), configurable: true, writable: true, enumerable: false });
+Object.defineProperty(Promise, 'all', { value: (value) => NativePromise.all(value), configurable: true, writable: true, enumerable: false });
+Object.defineProperty(Promise, 'race', { value: (value) => NativePromise.race(value), configurable: true, writable: true, enumerable: false });
+Object.defineProperty(Promise, 'allSettled', { value: (value) => NativePromise.allSettled(value), configurable: true, writable: true, enumerable: false });
+Object.defineProperty(Promise, 'any', { value: (value) => NativePromise.any(value), configurable: true, writable: true, enumerable: false });
+Object.defineProperty(Promise, Symbol.hasInstance, { value: (value) => value instanceof NativePromise, configurable: true, writable: true, enumerable: false });
 
-defineValue(Array, 'from', (...args) => InternalArray.from(...args));
-defineValue(Array, 'of', (...args) => InternalArray.of(...args));
-defineValue(Array, 'isArray', (value) => InternalArray.isArray(value));
-defineValue(Array, Symbol.hasInstance, (value) => (
-  value instanceof InternalArray
-));
+Object.defineProperty(Array, 'from', { value: (...args) => NativeArray.from(...args), configurable: true, writable: true, enumerable: false });
+Object.defineProperty(Array, 'of', { value: (...args) => NativeArray.of(...args), configurable: true, writable: true, enumerable: false });
+Object.defineProperty(Array, 'isArray', { value: (value) => NativeArray.isArray(value), configurable: true, writable: true, enumerable: false });
+Object.defineProperty(Array, Symbol.hasInstance, { value: (value) => value instanceof NativeArray, configurable: true, writable: true, enumerable: false });
 
-defineValue(PromisePrototype, 'constructor', Promise);
-defineValue(ArrayPrototype, 'constructor', Array);
+Object.defineProperty(PromisePrototype, 'constructor', { value: Promise, configurable: true, writable: true, enumerable: false });
+Object.defineProperty(ArrayPrototype, 'constructor', { value: Array, configurable: true, writable: true, enumerable: false });
 
 Promise.prototype = PromisePrototype;
 Array.prototype = ArrayPrototype;
 
-globalThis.Promise = Promise;
-globalThis.Array = Array;
-
 module.exports = {
   internal: {
-    Promise: InternalPromise,
-    Array: InternalArray,
+    Array,
+    Promise,
   },
   userland: {
-    Promise,
-    Array,
+    Array: NativeArray,
+    Promise: NativePromise,
   },
 };

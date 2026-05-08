@@ -11,7 +11,7 @@ const sumNumbers = (array) => {
   const total = ArrayPrototypeReduce(array, map, 0);
   const result = new Object();
   result.total = total;
-  return PromiseResolve.call(Promise, result);
+  return PromiseResolve(result);
 };
 
 module.exports = { sumNumbers };

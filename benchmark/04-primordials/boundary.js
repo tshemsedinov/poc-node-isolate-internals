@@ -6,6 +6,8 @@ const { reduce: ArrayPrototypeReduce } = Array.prototype;
 module.exports = {
   internal: {
     Object,
+    Array,
+    Promise,
     PromiseResolve: (value) => PromiseResolve.call(Promise, value),
     ArrayPrototypeReduce: (array, callback, initialValue) => (
       ArrayPrototypeReduce.call(array, callback, initialValue)
